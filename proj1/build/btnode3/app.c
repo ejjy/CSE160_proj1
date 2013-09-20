@@ -948,6 +948,12 @@ enum __nesc_unnamed4306 {
   PING_TIMER_PERIOD = 5333, 
   PING_TIMEOUT = 5000
 };
+# 18 "/home/robert/workspace/proj1/src/Node.nc"
+#line 15
+typedef nx_struct neighbor {
+  nx_uint16_t Node;
+  nx_uint8_t Age;
+} __attribute__((packed)) neighbor;
 # 6 "/home/robert/local/tinyos-2.1.1/tos/types/AM.h"
 typedef nx_uint8_t nx_am_id_t;
 typedef nx_uint8_t nx_am_group_t;
@@ -1134,6 +1140,9 @@ typedef nx_struct message_t {
   nx_uint8_t footer[sizeof(message_footer_t )];
   nx_uint8_t metadata[sizeof(message_metadata_t )];
 } __attribute__((packed)) message_t;
+typedef TMilli Node__PeriodicTimer__precision_tag;
+typedef neighbor Node__NeighborPool__t;
+typedef neighbor *Node__Neighbors__t;
 typedef pack Node__PacketList__t;
 # 61 "/home/robert/local/tinyos-2.1.1/tos/system/SchedulerBasicP.nc"
 enum SchedulerBasicP____nesc_unnamed4314 {

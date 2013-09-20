@@ -15,10 +15,13 @@ implementation {
 	components MainC;
 	components Node;
 	components new AMReceiverC(6);
+	components new TimerMilliC() as myTimerC;
 	
    Node -> MainC.Boot;
 	
    Node.Receive -> AMReceiverC;
+
+   Node.PeriodicTimer -> myTimerC;
 
    components ActiveMessageC;
    Node.AMControl -> ActiveMessageC;
@@ -28,4 +31,13 @@ implementation {
    
    components new ListC(pack, 64) as PacketListC;
    Node.PacketList -> PacketListC;
+   
+   components new ListC(neighbor*, 64) as NeighborListC;
+   Node.Neighbors -> NeighborListC;
+   
+   components new PoolC(neighbor, 64) as NeighborPoolC;
+   Node.NeighborPool -> NeighborPoolC;
+   
+   components RandomC as Random;
+   Node.Random -> Random;
 }
