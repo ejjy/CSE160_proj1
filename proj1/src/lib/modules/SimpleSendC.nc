@@ -19,6 +19,9 @@ implementation{
 	App.AMSend -> AMSenderC;
    
    //Lists
-   components new ListC(sendInfo, 10) as sendBuffer;
-   App.sendBuffer -> sendBuffer;
+   components new PoolC(sendInfo, 10);
+   components new QueueC(sendInfo*, 10);
+
+   App.Pool -> PoolC;
+   App.Queue -> QueueC;
 }

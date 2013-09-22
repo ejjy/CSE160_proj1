@@ -28,7 +28,7 @@ implementation{
 
 	command void List.pushfront(t input){
 		if(size < MAX_SIZE){
-			uint16_t i;
+			int32_t i;
 			for(i = size-1; i>=0; i--){
 				container[i+1] = container[i];
 			}

@@ -2,7 +2,7 @@
  * ANDES Lab - University of California, Merced
  * 
  * @author UCM ANDES Lab
- * @date   2013/09/03
+ * @date   2013/09/22
  * 
  */
 #include "../../packet.h"
@@ -10,7 +10,10 @@
 
 module SimpleSendP{
    provides interface SimpleSend;
-   uses interface List<sendInfo> as sendBuffer;
+   
+   uses interface Queue<sendInfo*>;
+   uses interface Pool<sendInfo>;
+
    uses interface Timer<TMilli> as sendTimer;
    
    uses interface Packet;
@@ -29,17 +32,18 @@ implementation{
    // A random element of delay is included to prevent congestion.
    void postSendTask(){
       if(call sendTimer.isRunning() == FALSE){
-         call sendTimer.startOneShot( (call Random.rand16() %200) + 20);
+         call sendTimer.startOneShot( (call Random.rand16() %200) + 500);
       }
    }
 
    command error_t SimpleSend.send(pack msg, uint16_t dest) {
-      sendInfo input;
-      input.src = msg.src;
-      input.packet = msg;
-      input.dest = dest;
-		//dbg("Project1F", "Sending packet to %d\n", dest);
-      call sendBuffer.pushback(input);
+      sendInfo *input;
+      
+      input = call Pool.get();
+      input->packet = msg;
+      input->dest = dest;
+
+      call Queue.enqueue(input);
 
       postSendTask();
       
@@ -47,14 +51,19 @@ implementation{
    }
 
    task void sendBufferTask(){
-      if(!call sendBuffer.isEmpty() && !busy){
-         sendInfo info;
-         info = call sendBuffer.popfront();// Peak
-         //dbg("Project1N", "Sending packet from %d to %d\n", info.src, info.dest);
-         send(info.src,info.dest, &(info.packet));
+      if(!call Queue.empty() && !busy){
+         sendInfo *info;
+         info = call Queue.head();// Peak
+         
+         if(SUCCESS == send(info->src,info->dest, &(info->packet))){
+            //Release resources used
+            call Queue.dequeue();
+            call Pool.put(info);
+         }
+         
 
       }
-      if(!call sendBuffer.isEmpty()){
+      if(!call Queue.empty()){
          postSendTask();
       }
    }
@@ -87,6 +96,7 @@ implementation{
             return FAIL;
          }
       }else{
+         dbg("genDebug", "The radio is busy");
          return EBUSY;
       }
       dbg("genDebug", "FAILED!?");
