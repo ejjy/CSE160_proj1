@@ -25,7 +25,7 @@ module Node{
    uses interface SplitControl as AMControl;
    uses interface Receive;
    uses interface Timer<TMilli> as PeriodicTimer;
-   uses interface List<neighbor *> as Neighbors;
+   uses interface List<neighbor *> as NeighborList;
    uses interface Pool<neighbor> as NeighborPool;
 
    uses interface SimpleSend as Sender;
@@ -33,20 +33,29 @@ module Node{
 
 implementation{
    pack sendPackage;
-   uint32_t start;
+
 
    // Prototypes
    bool findPack(pack *Package);
    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t Protocol, uint16_t seq, uint8_t *payload, uint8_t length);
-   void discoverNeighbors();
+   void discoverNeighborList();
    
    event void Boot.booted(){
+   	  uint32_t start;
+   	  uint32_t offset;
+   	  uint16_t add;
       call AMControl.start();
       dbg("genDebug", "Booted\n");
-      start = call Random.rand32() % 100;
+      start = call Random.rand32() % 2000;
+      add = call Random.rand16() % 2;
       //randomize firing period
-	  call PeriodicTimer.startPeriodicAt(start, 12000);
-	  dbg("Project1N", "Starting periodic timer\n");
+      if(add == 1) {
+         offset = 25000 + (call Random.rand32() % 5000);
+	  } else {
+	  	 offset = 25000 - (call Random.rand32() % 5000);
+	  }
+	  call PeriodicTimer.startPeriodicAt(start, offset);
+	  dbg("Project1N", "Starting periodic timer at %d every %d\n", start, offset);
    }
 
    event void AMControl.startDone(error_t err){
@@ -61,22 +70,24 @@ implementation{
    event void AMControl.stopDone(error_t err){}
 
    event void PeriodicTimer.fired() {
-   	  discoverNeighbors();
-   	  if(!call Neighbors.isEmpty()) {
-   	     dbg("Project1N", "No neighbors found\n");
+   	  uint16_t i, size;
+   	  discoverNeighborList();
+   	  
+   	  size = call NeighborList.size();
+   	  //Print out NeighborList after updating
+   	  if(size == 0) {
+   	     dbg("Project1N", "No NeighborList found\n");
    	  } else {
-   	  	 uint16_t i = 0;
-   	  	 uint16_t size = call Neighbors.size();
-   	  	 dbg("Project1N", "Updated Neighbors. Dumping new neighbor list for Node %d\n", TOS_NODE_ID);
+   	  	 dbg("Project1N", "Updated NeighborList. Dumping new neighbor list of size %d for Node %d\n", size, TOS_NODE_ID);
    	  	 for(i = 0; i < size; i++) {
-   	  	 	neighbor* neighbor_ptr = call Neighbors.get(i);
+   	  	 	neighbor* neighbor_ptr = call NeighborList.get(i);
    	  	 	dbg("Project1N", "Neighbor: %d, Age: %d\n", neighbor_ptr->Node, neighbor_ptr->Age);
    	  	 }
    	  }
    }
 
    event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-      dbg("genDebug", "Packet Received\n");
+      //dbg("genDebug", "Packet Received\n");
       if(len==sizeof(pack)){
          pack* myMsg=(pack*) payload;
 
@@ -85,35 +96,37 @@ implementation{
          	//Drop the packet if we've seen it or if it's TTL has run out
          	dbg("Project1F", "Dropping packet seq#%d from %d\n", myMsg->seq, myMsg->src);         	
          } else if(myMsg->dest == AM_BROADCAST_ADDR) {
+         	//Handle neighbor discovery packets separately
 			bool foundNeighbor;
          	uint16_t i = 0;
          	uint16_t size;
-			neighbor* Neighbor;
+			neighbor* Neighbor, *neighbor_ptr;
          	switch(myMsg->protocol) {
          		case PROTOCOL_PING:
 					//Configuration packet for neighbor discovery, make sure to send directly back to sender
-            		dbg("Project1N", "Received discovery packet, responding to %d\n", myMsg->src);
-            		makePack(&sendPackage, TOS_NODE_ID, myMsg->src, myMsg->TTL-1, PROTOCOL_PINGREPLY, myMsg->seq, (uint8_t *) myMsg->payload, sizeof(myMsg->payload));
+            		//dbg("Project1N", "Received discovery packet, responding to %d\n", myMsg->src);
+            		makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR, myMsg->TTL-1, PROTOCOL_PINGREPLY, myMsg->seq, (uint8_t *) myMsg->payload, sizeof(myMsg->payload));
             		if(call PacketList.isFull()) {
             			call PacketList.popfront();
             		}
             		call PacketList.pushback(sendPackage);
-            		call Sender.send(sendPackage, AM_BROADCAST_ADDR);
+            		call Sender.send(sendPackage, myMsg->src);
             		break;
 
          		case PROTOCOL_PINGREPLY:
 ;
-         			//Received ping reply from neighbors, time to update their age
-         			dbg("Project1N", "Received discovery response from %d\n", myMsg->src);
-         			//Search for neighbors first
-         			size = call Neighbors.size();
+         			//Received ping reply from NeighborList, time to update their age
+         			//dbg("Project1N", "Received discovery response from %d\n", myMsg->src);
+         			//Search for NeighborList first
+         			size = call NeighborList.size();
          			foundNeighbor = FALSE;
          			
          			for(i = 0; i < size; i++) {
-         				if((call Neighbors.get(i))->Node == myMsg->src) {
-         					dbg("Project1N", "Updating node %d in neighbor list\n", myMsg->src);
+         				neighbor_ptr = call NeighborList.get(i);
+         				if(neighbor_ptr->Node == myMsg->src) {
+         					//dbg("Project1N", "Updating node %d in neighbor list\n", myMsg->src);
          					//Found the neighbor, update age
-         					(call Neighbors.get(i))->Age = 0;
+         					neighbor_ptr->Age = 0;
          					foundNeighbor = TRUE;
          					break;
          				}
@@ -122,11 +135,11 @@ implementation{
          			if(foundNeighbor) {
          				break;
          			}
-					dbg("Project1N", "Node %d in list so inserting now\n", myMsg->src);
+					//dbg("Project1N", "Node %d not found in list so inserting now\n", myMsg->src);
 					Neighbor = call NeighborPool.get();
 					Neighbor->Node = myMsg->src;
 					Neighbor->Age = 0;
-					call Neighbors.pushback(Neighbor);
+					call NeighborList.pushback(Neighbor);
 					break;
 
          		default:
@@ -147,7 +160,7 @@ implementation{
                uint16_t dest;
 
                case PROTOCOL_PING:
-               dbg("Project1F", "Sending Ping Reply to %d! \n", myMsg->src);
+               //dbg("Project1F", "Sending Ping Reply to %d! \n", myMsg->src);
                makePack(&sendPackage, TOS_NODE_ID, myMsg->src, MAX_TTL,
                      PROTOCOL_PINGREPLY, 0, (uint8_t *) myMsg->payload, sizeof(myMsg->payload));
                //Push the packet we want to send into our seen/sent list
@@ -186,10 +199,10 @@ implementation{
             }
          } else {
          	//Handle packets that do not belong to you
-         	dbg("Project1F", "Received packet not meant for %d\n", TOS_NODE_ID);
+         	//dbg("Project1F", "Received packet not meant for %d\n", TOS_NODE_ID);
          	makePack(&sendPackage, myMsg->src, myMsg->dest, myMsg->TTL-1, myMsg->protocol, myMsg->seq, (uint8_t *)myMsg->payload, sizeof(myMsg->payload));
          	//Push the packet we want to send into our seen/sent list
-			dbg("Project1F", "Received Message from %d, meant for %d. Rebroadcasting\n", myMsg->src, myMsg->dest);
+			//dbg("Project1F", "Received Message from %d, meant for %d. Rebroadcasting\n", myMsg->src, myMsg->dest);
          	if(call PacketList.isFull()) {
          		call PacketList.popfront();
          	}
@@ -225,36 +238,37 @@ implementation{
       memcpy(Package->payload, payload, length);
    }
    
-   void discoverNeighbors() {
+   void discoverNeighborList() {
    	  pack Package;
    	  char* message;
-   	  //Age all neighbors first if list is not empty
-   	  if(!call Neighbors.isEmpty()) {
-   	  	 uint16_t size = call Neighbors.size();
+   	  //Age all NeighborList first if list is not empty
+   	  dbg("Project1N", "Discovery activated: %d checking list for neighbors\n", TOS_NODE_ID);
+   	  if(!call NeighborList.isEmpty()) {
+   	  	 uint16_t size = call NeighborList.size();
    	  	 uint16_t i = 0;
   	 	 uint16_t age = 0;
   	 	 neighbor* neighbor_ptr;
   	 	 neighbor* temp;
-  	 	 //Age the neighbors
+  	 	 //Age the NeighborList
    	  	 for(i = 0; i < size; i++) {
-   	  	 	temp = call Neighbors.get(i);
+   	  	 	temp = call NeighborList.get(i);
    	  	 	temp->Age++;
    	  	 }
    	  	 //If any are older than 5 neighbor confirmation requests then drop them from our list
    	  	 for(i = 0; i < size; i++) {
-   	  	 	temp = call Neighbors.get(i);
+   	  	 	temp = call NeighborList.get(i);
 			age = temp->Age;
 			if(age > 5) {
-				neighbor_ptr = call Neighbors.remove(i);
+				neighbor_ptr = call NeighborList.remove(i);
+				dbg("Project1N", "Node %d is older than 5 pings, dropping from list\n", neighbor_ptr->Node);
 				call NeighborPool.put(neighbor_ptr);
 				i--;
 				size--;
 			}
 		 }
    	  }
-   	  //Ready to ping neighbors
-   	  dbg("Project1N", "%d looking for neighbors\n", TOS_NODE_ID);
-   	  message = "Discovering neighbors\n";
+   	  //Ready to ping NeighborList
+   	  message = "womp\n";
    	  makePack(&Package, TOS_NODE_ID, AM_BROADCAST_ADDR, 2, PROTOCOL_PING, 1, (uint8_t*) message, (uint8_t) sizeof(message));
 
    	  if(call PacketList.isFull()) {

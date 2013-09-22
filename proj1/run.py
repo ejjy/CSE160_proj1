@@ -12,11 +12,11 @@ r = t.radio()
 # Read topology file.
 f = open("topo.txt", "r")
 numNodes = int(f.readline());
-i = 0;
+#i = 0;
 for line in f:
-  if i == 0:
-    i = i+1;
-    continue;
+  #if i == 0:
+    #i = i+1;
+    #continue;
   s = line.split()
   if s:
     print " ", s[0], " ", s[1], " ", s[2];
@@ -28,8 +28,8 @@ t.addChannel("genDebug", sys.stdout)
 t.addChannel("cmdDebug", sys.stdout)
 # Debug channels for project 1
 t.addChannel("Project1F", sys.stdout)
-t.addChannel("Project1N", out);
-
+t.addChannel("Project1N", sys.stdout);
+out.close();
 # Get and Create a Noise Model
 noise = open("no_noise.txt", "r")
 for line in noise:
@@ -107,7 +107,7 @@ def cmdPing(source, destination, msg):
 #cmdPing(1, 3, "Hello 1 to 3");
 runTime(1)
 cmdPing(1, 3, "Hello 1 to 3");
-runTime(1)
+runTime(20)
 #cmdPing(2, 4, "Hello 2 to 4");
 #runTime(2)
 #cmdPing(3, 6, "Hello 3 to 6")

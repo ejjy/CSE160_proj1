@@ -35,6 +35,7 @@ implementation{
 
    command error_t SimpleSend.send(pack msg, uint16_t dest) {
       sendInfo input;
+      input.src = msg.src;
       input.packet = msg;
       input.dest = dest;
 		//dbg("Project1F", "Sending packet to %d\n", dest);
@@ -49,6 +50,7 @@ implementation{
       if(!call sendBuffer.isEmpty() && !busy){
          sendInfo info;
          info = call sendBuffer.popfront();// Peak
+         //dbg("Project1N", "Sending packet from %d to %d\n", info.src, info.dest);
          send(info.src,info.dest, &(info.packet));
 
       }

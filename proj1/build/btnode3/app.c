@@ -1142,8 +1142,8 @@ typedef nx_struct message_t {
 } __attribute__((packed)) message_t;
 typedef TMilli Node__PeriodicTimer__precision_tag;
 typedef neighbor Node__NeighborPool__t;
-typedef neighbor *Node__Neighbors__t;
 typedef pack Node__PacketList__t;
+typedef neighbor *Node__NeighborList__t;
 # 61 "/home/robert/local/tinyos-2.1.1/tos/system/SchedulerBasicP.nc"
 enum SchedulerBasicP____nesc_unnamed4314 {
 

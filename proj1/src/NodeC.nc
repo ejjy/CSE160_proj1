@@ -33,7 +33,7 @@ implementation {
    Node.PacketList -> PacketListC;
    
    components new ListC(neighbor*, 64) as NeighborListC;
-   Node.Neighbors -> NeighborListC;
+   Node.NeighborList -> NeighborListC;
    
    components new PoolC(neighbor, 64) as NeighborPoolC;
    Node.NeighborPool -> NeighborPoolC;
