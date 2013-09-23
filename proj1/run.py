@@ -22,13 +22,13 @@ for line in f:
     print " ", s[0], " ", s[1], " ", s[2];
     r.add(int(s[0]), int(s[1]), float(s[2]))
 
-out = open('output.txt', 'w')
+#out = open('output.txt', 'w')
 # Channels used for debuging
 t.addChannel("genDebug", sys.stdout)
 t.addChannel("cmdDebug", sys.stdout)
 # Debug channels for project 1
 t.addChannel("Project1F", sys.stdout)
-t.addChannel("Project1N", sys.stdout);
+#t.addChannel("Project1N", sys.stdout);
 
 # Get and Create a Noise Model
 noise = open("no_noise.txt", "r")
@@ -76,6 +76,7 @@ pkt.setType(msg.get_amType())
 
 # COMMAND TYPES
 CMD_PING = "0"
+CMD_NEIGHBOR_DUMP = "1"
 
 # Generic Command
 def sendCMD(string):
@@ -100,21 +101,29 @@ def sendCMD(string):
 def cmdPing(source, destination, msg):
    dest = chr(ord('0') + destination);
    sendCMD(str(source) +" "+ CMD_PING + dest + msg);
+   
+def cmdNeighborDump(source):
+   sendCMD(str(source) + " " + CMD_NEIGHBOR_DUMP);
 
 #runTime(1)
 #cmdPing(1, 2, "Hello World!");
 #runTime(5)   
 #cmdPing(1, 3, "Hello 1 to 3");
 runTime(5)
-cmdPing(1, 2, "Hello 1 to 2");
-runTime(5)
-cmdPing(1, 3, "Hello 1 to 3");
-runTime(5)
-cmdPing(1, 3, "Hello again");
-runTime(5)
-cmdPing(1, 8, "Hello 1 to 8");
-runTime(5)
-cmdPing(2,10, "Hello 2 to 10");
+#cmdPing(1, 2, "Hello 1 to 2");
+cmdPing(3, 5, "Hello 3 to 5");
+#cmdPing(5, 1, "Hello 5 to 1");
+cmdPing(5, 3, "Hello 5 to 3");
+cmdPing(3, 6, "Hello 3 to 6");
+cmdPing(6, 3, "Hello 6 to 3");
+#cmdPing(1, 3, "Hello 1 to 3");
+#cmdPing(1, 3, "Hello again");
+cmdNeighborDump(3);
+#cmdPing(1, 8, "Hello 1 to 8");
+#cmdPing(2,10, "Hello 2 to 10");
+t.getNode(2).turnOff();
+runTime(30)
+cmdNeighborDump(3);
 runTime(10)
 #cmdPing(2, 4, "Hello 2 to 4");
 #runTime(2)

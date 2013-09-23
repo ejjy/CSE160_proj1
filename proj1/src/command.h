@@ -30,6 +30,11 @@ bool isPing(uint8_t *array, uint8_t size){
 	return FALSE;
 }
 
+bool isNeighborDump(uint8_t *array, uint8_t size) {
+	if(array[0] == CMD_NEIGHBOR_DUMP) return TRUE;
+	return FALSE;
+}
+
 /*
  * getCmd - processes a string to find out which command is being issued. A Command ID is returned based on the
  * enum declared. Also debugging information is sent to the cmdDebug channel.
@@ -46,6 +51,11 @@ int getCMD(uint8_t *array, uint8_t size){
 	if(isPing(array,size)){
 		dbg("cmdDebug", "Command Type: Ping\n");
 		return CMD_PING;
+	}
+	
+	if(isNeighborDump(array, size)) {
+		dbg("cmdDebug", "Command Type: Neighbor Dump\n");
+		return CMD_NEIGHBOR_DUMP;
 	}
 	
 	dbg("cmdDebug", "CMD_ERROR: \"%s\" does not match any known commands.\n", array);
