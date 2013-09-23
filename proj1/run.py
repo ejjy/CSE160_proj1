@@ -22,14 +22,14 @@ for line in f:
     print " ", s[0], " ", s[1], " ", s[2];
     r.add(int(s[0]), int(s[1]), float(s[2]))
 
-out = open('NeighborDiscovery.txt', 'w')
+out = open('output.txt', 'w')
 # Channels used for debuging
 t.addChannel("genDebug", sys.stdout)
 t.addChannel("cmdDebug", sys.stdout)
 # Debug channels for project 1
 t.addChannel("Project1F", sys.stdout)
 t.addChannel("Project1N", sys.stdout);
-out.close();
+
 # Get and Create a Noise Model
 noise = open("no_noise.txt", "r")
 for line in noise:
@@ -105,9 +105,17 @@ def cmdPing(source, destination, msg):
 #cmdPing(1, 2, "Hello World!");
 #runTime(5)   
 #cmdPing(1, 3, "Hello 1 to 3");
-runTime(1)
+runTime(5)
+cmdPing(1, 2, "Hello 1 to 2");
+runTime(5)
 cmdPing(1, 3, "Hello 1 to 3");
-runTime(20)
+runTime(5)
+cmdPing(1, 3, "Hello again");
+runTime(5)
+cmdPing(1, 8, "Hello 1 to 8");
+runTime(5)
+cmdPing(2,10, "Hello 2 to 10");
+runTime(10)
 #cmdPing(2, 4, "Hello 2 to 4");
 #runTime(2)
 #cmdPing(3, 6, "Hello 3 to 6")

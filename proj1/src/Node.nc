@@ -33,12 +33,15 @@ module Node{
 
 implementation{
    pack sendPackage;
+   uint16_t seqCounter = 0;
+   uint16_t firedCounter = 0;
 
 
    // Prototypes
    bool findPack(pack *Package);
    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t Protocol, uint16_t seq, uint8_t *payload, uint8_t length);
    void discoverNeighborList();
+   void printNeighborList();
    
    event void Boot.booted(){
    	  uint32_t start;
@@ -50,9 +53,9 @@ implementation{
       add = call Random.rand16() % 2;
       //randomize firing period
       if(add == 1) {
-         offset = 25000 + (call Random.rand32() % 5000);
+         offset = 55000 + (call Random.rand32() % 5000);
 	  } else {
-	  	 offset = 25000 - (call Random.rand32() % 5000);
+	  	 offset = 55000 - (call Random.rand32() % 5000);
 	  }
 	  call PeriodicTimer.startPeriodicAt(start, offset);
 	  dbg("Project1N", "Starting periodic timer at %d every %d\n", start, offset);
@@ -70,19 +73,10 @@ implementation{
    event void AMControl.stopDone(error_t err){}
 
    event void PeriodicTimer.fired() {
-   	  uint16_t i, size;
    	  discoverNeighborList();
-   	  
-   	  size = call NeighborList.size();
-   	  //Print out NeighborList after updating
-   	  if(size == 0) {
-   	     dbg("Project1N", "No NeighborList found\n");
-   	  } else {
-   	  	 dbg("Project1N", "Updated NeighborList. Dumping new neighbor list of size %d for Node %d\n", size, TOS_NODE_ID);
-   	  	 for(i = 0; i < size; i++) {
-   	  	 	neighbor* neighbor_ptr = call NeighborList.get(i);
-   	  	 	dbg("Project1N", "Neighbor: %d, Age: %d\n", neighbor_ptr->Node, neighbor_ptr->Age);
-   	  	 }
+   	  firedCounter++;
+   	  if(firedCounter % 2 == 0) {
+   	  	printNeighborList();
    	  }
    }
 
@@ -153,7 +147,9 @@ implementation{
             if(call PacketList.isFull()) {
             	call PacketList.popfront();
             }
-            call PacketList.pushback(*myMsg);
+            if(myMsg->protocol != PROTOCOL_CMD) {
+            	call PacketList.pushback(*myMsg);            	
+            }
 
             switch(myMsg->protocol){
                uint8_t createMsg[PACKET_MAX_PAYLOAD_SIZE];
@@ -162,7 +158,7 @@ implementation{
                case PROTOCOL_PING:
                //dbg("Project1F", "Sending Ping Reply to %d! \n", myMsg->src);
                makePack(&sendPackage, TOS_NODE_ID, myMsg->src, MAX_TTL,
-                     PROTOCOL_PINGREPLY, 0, (uint8_t *) myMsg->payload, sizeof(myMsg->payload));
+                     PROTOCOL_PINGREPLY, myMsg->seq, (uint8_t *) myMsg->payload, sizeof(myMsg->payload));
                //Push the packet we want to send into our seen/sent list
 			   if(call PacketList.isFull()) {
          	      call PacketList.popfront();
@@ -181,8 +177,8 @@ implementation{
                      memcpy(&createMsg, (myMsg->payload) + CMD_LENGTH+1, sizeof(myMsg->payload) - CMD_LENGTH+1);
                      memcpy(&dest, (myMsg->payload)+ CMD_LENGTH, sizeof(uint8_t));
                      makePack(&sendPackage, TOS_NODE_ID, (dest-48)&(0x00FF),
-                           MAX_TTL, PROTOCOL_PING, 0, (uint8_t *)createMsg, sizeof(createMsg));	
-
+                           MAX_TTL, PROTOCOL_PING, seqCounter, (uint8_t *)createMsg, sizeof(createMsg));	
+					 seqCounter++;
                      //Push the packet we want to send into our seen/sent list
 					 if(call PacketList.isFull()) {
 						 call PacketList.popfront();
@@ -276,5 +272,20 @@ implementation{
    	  }
    	  call PacketList.pushback(Package);
    	  call Sender.send(Package, AM_BROADCAST_ADDR);
+   }
+   
+   void printNeighborList() {
+	  uint16_t i, size;
+	  size = call NeighborList.size();
+   	  //Print out NeighborList after updating
+   	  if(size == 0) {
+   	     dbg("Project1N", "No NeighborList found\n");
+   	  } else {
+   	  	 dbg("Project1N", "Updated NeighborList. Dumping new neighbor list of size %d for Node %d\n", size, TOS_NODE_ID);
+   	  	 for(i = 0; i < size; i++) {
+   	  	 	neighbor* neighbor_ptr = call NeighborList.get(i);
+   	  	 	dbg("Project1N", "Neighbor: %d, Age: %d\n", neighbor_ptr->Node, neighbor_ptr->Age);
+   	  	 }
+   	  }
    }  	
 }
