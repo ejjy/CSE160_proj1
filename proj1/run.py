@@ -22,13 +22,12 @@ for line in f:
     print " ", s[0], " ", s[1], " ", s[2];
     r.add(int(s[0]), int(s[1]), float(s[2]))
 
-#out = open('output.txt', 'w')
 # Channels used for debuging
 t.addChannel("genDebug", sys.stdout)
 t.addChannel("cmdDebug", sys.stdout)
 # Debug channels for project 1
 t.addChannel("Project1F", sys.stdout)
-#t.addChannel("Project1N", sys.stdout);
+t.addChannel("Project1N", sys.stdout);
 
 # Get and Create a Noise Model
 noise = open("no_noise.txt", "r")

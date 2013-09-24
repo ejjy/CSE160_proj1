@@ -9524,12 +9524,12 @@ static inline void Node$Boot$booted(void )
   add = Node$Random$rand16() % 2;
 
   if (add == 1) {
-      offset = 35000 + Node$Random$rand32() % 5000;
+      offset = 15000 + Node$Random$rand32() % 5000;
     }
   else 
 #line 57
     {
-      offset = 35000 - Node$Random$rand32() % 5000;
+      offset = 15000 - Node$Random$rand32() % 5000;
     }
   Node$PeriodicTimer$startPeriodicAt(start, offset);
   sim_log_debug(167U, "Project1N", "Booted with periodic timer starting at %d, firing every %d\n", start, offset);

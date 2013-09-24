@@ -53,9 +53,9 @@ implementation{
 		add = call Random.rand16() % 2;
 		//randomize firing period
 		if(add == 1) {
-			offset = 35000 + (call Random.rand32() % 5000);
+			offset = 15000 + (call Random.rand32() % 5000);
 		} else {
-			offset = 35000 - (call Random.rand32() % 5000);
+			offset = 15000 - (call Random.rand32() % 5000);
 		}
 		call PeriodicTimer.startPeriodicAt(start, offset);
 		dbg("Project1N", "Booted with periodic timer starting at %d, firing every %d\n", start, offset);
@@ -74,10 +74,6 @@ implementation{
 
 	event void PeriodicTimer.fired() {
 		discoverNeighborList();
-		//firedCounter++;
-		//if(firedCounter % 3 == 0) {
-			//printNeighborList();
-		//}
 	}
 
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
